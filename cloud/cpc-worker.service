@@ -1,0 +1,25 @@
+[Unit]
+Description=Run a Copernicus Worker
+Requires=etcd2.service
+After=etcd2.service
+
+[Service]
+SyslogIdentifier=%p
+ExecStartPre=/usr/bin/docker pull soellman/gromacs
+ExecStartPre=/usr/bin/docker pull soellman/copernicus
+ExecStartPre=-/usr/bin/docker create --name gromacs soellman/gromacs /bin/true
+ExecStartPre=-/usr/bin/mkdir /home/core/copernicus
+ExecStartPre=-/usr/bin/chown 1000 /home/core/copernicus
+ExecStartPre=-/usr/bin/docker rm -f %p
+# get the connection bundle from etcd
+ExecStartPost=/bin/bash -c '\
+  until etcdctl ls / >/dev/null 2>&1 ; do sleep 1; done && \
+  CFG=/home/core/copernicus/.copernicus/client.cnx && \
+  etcdctl get /cpc/server > $CFG && \
+  chown 1000 $CFG'
+ExecStart=/usr/bin/docker run --rm --name %p \
+  --volumes-from gromacs \
+  -v /home/core/copernicus:/home/copernicus \
+  soellman/copernicus cpc-worker
+ExecStop=/usr/bin/docker stop %p
+SuccessExitStatus=1 137

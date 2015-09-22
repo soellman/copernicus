@@ -4,9 +4,6 @@ MAINTAINER Oliver Soell <oliver@soell.net>
 ENV COPERNICUS_VERSION 2.1.4
 ENV COPERNICUS_PASSWORD default
 
-EXPOSE 13807 14807
-VOLUME /home/copernicus
-
 RUN apt-get update -y &&\
     apt-get install -y python ca-certificates curl build-essential --no-install-recommends &&\
     curl -sL https://github.com/gromacs/copernicus/archive/${COPERNICUS_VERSION}.tar.gz | tar zxfv - -C /var/tmp &&\
@@ -21,9 +18,13 @@ RUN apt-get update -y &&\
     rm -rf /var/lib/apt/lists
 
 RUN useradd -m -u 1000 copernicus
+RUN chown -R 1000:1000 /home/copernicus
 USER copernicus
 WORKDIR /home/copernicus
 ENV PATH $PATH:/opt/copernicus:/opt/gromacs/bin
+
+EXPOSE 13807 14807
+VOLUME /home/copernicus
 
 ADD server-init.sh /server-init.sh
 CMD ["/server-init.sh", "cpc-server", "start", "-dev"]
