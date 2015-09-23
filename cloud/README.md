@@ -11,7 +11,33 @@ The `cpcc` command could be extended to add a new `cloud` subcommand which can d
 1. `scale` - scale workers to desired number
 1. `download` - download all data from cluster
 1. `shutdown` - scale workers to 0 and shut master down
+1. `revive` - start up master
 1. `terminate` - terminate entire cluster, destroying all resources
+
+## Proposed Milestones
+
+### One
+
+- Cloudformation with single-node and cooperating cpc-server and cpc-worker.
+- Drive with shell/python script
+
+### Two
+
+- Cloudformation with small master and ASG with workers.
+- Allow specification of gromacs/cpc versions
+- implement `new-cluster`, `set-cluster`, `status`, `terminate` using boto
+
+### Three
+
+- Add persistent storage and scale-down on idle (pre-requisite: EFS in GA)
+- implement `scale`, `shutdown`, `revive`
+
+### Unscheduled
+
+- `download`??
+- GPU support
+- gromacs release docker builds using jenkins
+- detect cpu optimizations to choose best gromacs image
 
 ## Use it
 
