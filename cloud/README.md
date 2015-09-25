@@ -14,6 +14,10 @@ The `cpcc` command could be extended to add a new `cloud` subcommand which can d
 1. `revive` - start up master
 1. `terminate` - terminate entire cluster, destroying all resources
 
+## Status
+
+Milestone one is almost complete.
+
 ## Proposed Milestones
 
 ### One
@@ -40,6 +44,14 @@ The `cpcc` command could be extended to add a new `cloud` subcommand which can d
 - detect cpu optimizations to choose best gromacs image
 
 ## Use it
+
+### Create a cluster in AWS
+
+The create-cluster.py script (which has dummy variables) will create a cluster in AWS (us-east-1 for now) consisting of a single node which runs the server and a worker. The script will output its IP address which you can use to login via `cpcc`.
+
+You will need to have your AWS credentials in the file used by boto (python AWS library): http://boto.readthedocs.org/en/latest/boto_config_tut.html
+
+This essentially fulfills the first milestone.
 
 ### Run the server/worker
 

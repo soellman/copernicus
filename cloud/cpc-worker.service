@@ -12,7 +12,7 @@ ExecStartPre=-/usr/bin/mkdir /home/core/copernicus
 ExecStartPre=-/usr/bin/chown 1000 /home/core/copernicus
 ExecStartPre=-/usr/bin/docker rm -f %p
 # get the connection bundle from etcd
-ExecStartPost=/bin/bash -c '\
+ExecStartPre=/bin/bash -c '\
   until etcdctl ls / >/dev/null 2>&1 ; do sleep 1; done && \
   CFG=/home/core/copernicus/.copernicus/client.cnx && \
   etcdctl get /cpc/server > $CFG && \

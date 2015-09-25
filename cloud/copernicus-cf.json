@@ -1,0 +1,109 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Copernicus: https://github.com/soellman/copernicus/tree/cloud/cloud (CoreOS Stable 766.3.0)",
+  "Mappings" : {
+      "RegionMap" : {
+          "us-east-1" : {
+              "AMI" : "ami-f396fa96"
+          }
+      }
+  },
+  "Resources": {
+    "VPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : "10.20.0.0/16"
+      }
+    },
+    "InternetGateway": {
+      "Type" : "AWS::EC2::InternetGateway"
+    },
+    "GatewayToInternet": {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "Properties" : {
+         "InternetGatewayId" : { "Ref" : "InternetGateway" },
+         "VpcId" : { "Ref" : "VPC" }
+      }
+    },
+    "PrivateRouteTable" : {
+      "DependsOn" : [ "VPC" ],
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" }
+      }
+    },
+    "PrivateRoute" : {
+      "DependsOn" : ["PrivateRouteTable", "InternetGateway"],
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+    "PrivateSubnetRouteTableAssociation" : {
+      "DependsOn" : ["PrivateSubnet", "PrivateRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+    "PrivateSubnet" : {
+      "DependsOn" : ["VPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.20.0.0/22"
+      }
+    },
+    "ServerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId" : { "Ref" : "VPC" },
+        "GroupDescription": "Server SecurityGroup",
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": "${ACCESS_CIDR}"},
+          {"IpProtocol": "tcp", "FromPort": "14807", "ToPort": "14807", "CidrIp": "${ACCESS_CIDR}"}
+        ]
+      }
+    },
+    "ServerAutoScale": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "VPCZoneIdentifier": [ {"Ref": "PrivateSubnet"} ],
+        "LaunchConfigurationName": {"Ref": "ServerLaunchConfig"},
+        "MinSize": "1",
+        "MaxSize": "1",
+        "DesiredCapacity": "1",
+        "Tags": [
+            {"Key": "Name", "Value": { "Ref" : "AWS::StackName" }, "PropagateAtLaunch": true}
+        ]
+      }
+    },
+    "ServerLaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress" : true,
+        "ImageId" : { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "AMI" ]},
+        "InstanceType": "${INSTANCE_TYPE}",
+        "KeyName": "${KEY_NAME}",
+        "SecurityGroups": [{"Ref": "ServerSecurityGroup"}],
+        "UserData" : {
+            "Fn::Base64": {
+                "Fn::Join":
+                [ "", [ 
+${USERDATA}
+                ]
+                ]
+            }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ASGName": {
+      "Value": {"Ref": "ServerAutoScale"}
+    }
+  }
+}
